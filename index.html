@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>서울의 비밀 (The Seoul Mystery)</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        #game-container {
+            width: 100%;
+            max-width: 650px;
+            background-color: #1e293b;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+            border: 1px solid #334155;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #334155;
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 1.2rem;
+            color: #38bdf8;
+        }
+
+        #stats {
+            font-size: 0.9rem;
+            color: #94a3b8;
+        }
+
+        #stats strong {
+            color: #facc15;
+        }
+
+        #speaker-box {
+            font-weight: bold;
+            color: #facc15;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .korean-text {
+            font-size: 1.4rem;
+            line-height: 2.2rem;
+            margin: 15px 0;
+            background: #0f172a;
+            padding: 16px;
+            border-radius: 10px;
+        }
+
+        /* Clickable Words Styling */
+        .word {
+            color: #38bdf8;
+            cursor: pointer;
+            border-bottom: 2px dashed #38bdf8;
+            padding: 2px 4px;
+            border-radius: 4px;
+            transition: all 0.2s;
+            display: inline-block;
+        }
+
+        .word:hover {
+            background-color: #334155;
+            color: #facc15;
+            border-bottom-color: #facc15;
+        }
+
+        /* Translation Pop-up Box */
+        #translation-box {
+            background: #0284c7;
+            color: #ffffff;
+            padding: 12px 16px;
+            margin: 15px 0;
+            border-radius: 8px;
+            font-size: 1rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        #translation-box .note {
+            font-size: 0.85rem;
+            opacity: 0.9;
+            margin-top: 4px;
+        }
+
+        /* Grammar Explanation Box */
+        #explanation-box {
+            background: #312e81;
+            border-left: 4px solid #818cf8;
+            padding: 14px;
+            margin: 15px 0;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        /* Interactive Action & Choice Buttons */
+        .choice-btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            background: #334155;
+            color: white;
+            border: 1px solid #475569;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: left;
+            font-size: 1rem;
+            transition: background 0.2s;
+        }
+
+        .choice-btn:hover {
+            background: #475569;
+        }
+
+        button#next-btn {
+            width: 100%;
+            padding: 14px;
+            background: #22c55e;
+            color: white;
+            font-size: 1.05rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: background 0.2s;
+        }
+
+        button#next-btn:hover {
+            background: #16a34a;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <header>
+            <h1>서울의 비밀 (The Seoul Mystery)</h1>
+            <div id="stats">
+                Chapter: <strong id="chapter-num">1</strong> | 
+                XP: <strong id="xp-count">0</strong>
+            </div>
+        </header>
+
+        <main id="scene-card">
+            <h2 id="scene-title" style="font-size: 1.1rem; margin-bottom: 12px; color: #cbd5e1;">Loading...</h2>
+            
+            <div id="speaker-box"></div>
+            
+            <div id="story-text" class="korean-text"></div>
+
+            <div id="translation-box" class="hidden">
+                🔎 <span id="trans-korean" style="font-weight: bold;"></span> = 
+                <span id="trans-english" style="font-weight: bold;"></span>
+                <div id="trans-note" class="note"></div>
+            </div>
+
+            <div id="explanation-box" class="hidden"></div>
+
+            <div id="interactive-area"></div>
+        </main>
+
+        <footer>
+            <button id="next-btn" onclick="nextScene()">Continue ➔</button>
+        </footer>
+    </div>
+
+    <script>
+        // Dictionary for interactive lookup
+        const dictionary = {
+            "안녕하세요": { en: "Hello", note: "Formal, polite greeting." },
+            "저는": { en: "I am (as for me)", note: "저 (I, formal) + 는 (topic marker)" },
+            "민우입니다": { en: "am Minwoo", note: "민우 (Name) + 입니다 (is/am - formal)" },
+            "이것은": { en: "This thing", note: "이것 (this) + 은 (topic marker)" },
+            "비밀": { en: "Secret", note: "Noun meaning secret." },
+            "지도입니다": { en: "is a map", note: "지도 (map) + 입니다 (is/am)" },
+            "어디로": { en: "To where / In which direction", note: "어디 (where) + 로 (direction marker)" },
+            "가야": { en: "must go", note: "가다 (to go) stem form" },
+            "합니까": { en: "should we...?", note: "Formal question ending" },
+            "홍대로": { en: "To Hongdae", note: "홍대 (Hongdae) + 로 (towards)" },
+            "가세요": { en: "Please go", note: "Polite imperative request" },
+            "감사합니다": { en: "Thank you", note: "Formal expression of gratitude" }
+        };
+
+        // Game Story Chapters and Dialogue Scenes
+        const scenes = [
+            {
+                chapter: 1,
+                title: "Scene 1: The Cryptic Note",
+                speaker: "Minwoo",
+                text: "안녕하세요 ! 저는 민우입니다 . 이것은 비밀 지도입니다 .",
+                explanation: "💡 <strong>Grammar Focus: Topic Marker (은/는) & Formal Speech (입니다)</strong><br>• <strong>저 + 는</strong> sets the topic to 'Me'.<br>• Attach <strong>입니다</strong> to any noun to mean 'is/am/are'.<br><em>Click on any highlighted word above to see its translation!</em>",
+                type: "reading"
+            },
+            {
+                chapter: 1,
+                title: "Scene 2: Choosing the Destination",
+                speaker: "Minwoo",
+                text: "어디로 가야 합니까 ?",
+                explanation: "💡 <strong>Grammar Focus: Direction Marker (으로/로)</strong><br>• Attach <strong>~로</strong> to a location to indicate 'towards' or 'to'.",
+                type: "choice",
+                options: [
+                    { label: "Hongdae (홍대)", text: "홍대로 가세요 .", correct: true },
+                    { label: "Home (집)", text: "집으로 가세요 .", correct: false }
+                ]
+            },
+            {
+                chapter: 1,
+                title: "Scene 3: On the Move",
+                speaker: "Minwoo",
+                text: "홍대로 가세요 ! 감사합니다 .",
+                explanation: "🎉 <strong>Great Job!</strong> You guided Minwoo to Hongdae. You are ready for Chapter 2!",
+                type: "reading"
+            }
+        ];
+
+        let currentScene = 0;
+        let xp = 0;
+
+        function renderScene() {
+            const scene = scenes[currentScene];
+            document.getElementById("chapter-num").innerText = scene.chapter;
+            document.getElementById("scene-title").innerText = scene.title;
+            document.getElementById("speaker-box").innerText = scene.speaker ? scene.speaker : "";
+            
+            // Hide previous translations
+            document.getElementById("translation-box").classList.add("hidden");
+            
+            // Render text tokens with interactive handlers
+            const words = scene.text.split(" ");
+            const storyBox = document.getElementById("story-text");
+            storyBox.innerHTML = "";
+
+            words.forEach(word => {
+                const cleanWord = word.trim();
+                if (cleanWord.length > 0) {
+                    const span = document.createElement("span");
+                    if (dictionary[cleanWord]) {
+                        span.className = "word";
+                        span.onclick = () => showTranslation(cleanWord);
+                    }
+                    span.innerText = cleanWord + " ";
+                    storyBox.appendChild(span);
+                }
+            });
+
+            // Render Grammar Box
+            const expBox = document.getElementById("explanation-box");
+            if (scene.explanation) {
+                expBox.innerHTML = scene.explanation;
+                expBox.classList.remove("hidden");
+            } else {
+                expBox.classList.add("hidden");
+            }
+
+            // Render Choices or Next button state
+            const interactiveArea = document.getElementById("interactive-area");
+            interactiveArea.innerHTML = "";
+            const nextBtn = document.getElementById("next-btn");
+
+            if (scene.type === "choice") {
+                nextBtn.classList.add("hidden");
+                scene.options.forEach(opt => {
+                    const btn = document.createElement("button");
+                    btn.className = "choice-btn";
+                    btn.innerText = opt.label + " ➔ " + opt.text;
+                    btn.onclick = () => selectOption(opt.correct);
+                    interactiveArea.appendChild(btn);
+                });
+            } else {
+                nextBtn.classList.remove("hidden");
+            }
+        }
+
+        function showTranslation(word) {
+            const box = document.getElementById("translation-box");
+            const entry = dictionary[word];
+            
+            if (entry) {
+                document.getElementById("trans-korean").innerText = word;
+                document.getElementById("trans-english").innerText = entry.en;
+                document.getElementById("trans-note").innerText = entry.note;
+                box.classList.remove("hidden");
+            }
+        }
+
+        function selectOption(isCorrect) {
+            if (isCorrect) {
+                xp += 10;
+                document.getElementById("xp-count").innerText = xp;
+                alert("Correct! +10 XP");
+                nextScene();
+            } else {
+                alert("Incorrect choice! Try again.");
+            }
+        }
+
+        function nextScene() {
+            if (currentScene < scenes.length - 1) {
+                currentScene++;
+                renderScene();
+            } else {
+                alert("🎉 Chapter 1 complete! You finished the demo.");
+            }
+        }
+
+        // Initialize scene on startup
+        window.onload = renderScene;
+    </script>
+</body>
+</html>
